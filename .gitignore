@@ -1,2 +1,5 @@
 # Created by .ignore support plugin (hsz.mobi)
 node_modules
+!output
+output/*
+!output/webpack-index.html

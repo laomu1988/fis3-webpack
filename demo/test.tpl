@@ -1,3 +1,6 @@
 <div>
-	&nbsp;testTPL testTPL
+	<code>
+		var a = 1;
+		var b = "test";
+	</code>
 </div>

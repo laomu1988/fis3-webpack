@@ -1,4 +1,8 @@
 var webpack = require('webpack');
+/***
+ * 需要安装插件:
+ * npm install --save-dev string-loader html-minifier css-loader less-loader style-loader
+ * */
 
 module.exports = {
     //插件项

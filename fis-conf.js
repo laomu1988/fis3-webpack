@@ -1,35 +1,17 @@
 fis.set('project.files', ['/demo/index.html', 'map.json']);
 
-fis.hook('commonjs');
-
 require('./fis3-pack');
-
-fis.match('::package', {postpackager: fis.plugin('loader')});
-// fis.match('*', {deploy: [fis.plugin('local-deliver')]});
-
-
 
 fis.hook('relative');
 fis.match('*.*', {relative: true});
-fis.match('*.js', {isMod: true});
-// fis.on('compile:parser', function (file) {
-//     console.log('compile:parser');
-// });
 
-
-// fis.on('standard:html', function (file) {
-//     console.log('parser', file);
-// });
-
-// fis.on('packager', function (file) {
-//     console.log('compile: ', file.id);
-//     console.log(file);
-// });
-
-// console.log('conf:loaded');
-// var files = fis.project.getSource();
-// console.log(files);
-// fis.match('**', {
-//     optimizer: fis.plugin('minify')
-// });
-
+// 引入html文件
+fis.on('fis3-pack', function (packFile, file) {
+    if (file.ext === '.tpl' && !file.packed) {
+        file.packed = true;
+        var content = file._content || '';
+        content = content.replace(/([\'\"\n])/g, '\\$1');
+        // content = content.replace(/\n/g, '\\n');
+        packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';
+    }
+});

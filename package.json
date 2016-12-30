@@ -12,12 +12,5 @@
     "webpack"
   ],
   "author": "laomu1988@qq.com",
-  "license": "MIT",
-  "devDependencies": {
-    "string-loader": "0.0.1",
-    "html-minifier": "^3.2.3",
-    "css-loader": "^0.26.1",
-    "less-loader": "^2.2.3",
-    "style-loader": "^0.13.1"
-  }
+  "license": "MIT"
 }
