@@ -25,6 +25,7 @@ fis.match('*.js', {isMod: true});
 fis.match('*', {deploy: [fis.plugin('local-deliver')]});
 
 function log(file, sign) {
+    return;
     sign && console.log('--------------    ' + sign + '    ---------');
     console.log('file.id:', file.id);
     console.log('file.url:', file.url);
@@ -60,7 +61,7 @@ function isRequired(file) {
             var requires = f.requires;
             for (var i = requires.length - 1; i >= 0; i--) {
                 if (requires[i] === file.id || requires[i] === file.moduleId) {
-                    return true;
+                    return f;
                 }
             }
         }
@@ -69,14 +70,30 @@ function isRequired(file) {
 }
 
 fis.on('compile:end', function (file) {
-    log(file, 'compile:end');
+
     files[file.id] = file;
     files[file.url] = file;
     if (file.isHtmlLike) {
         htmlFiles[file.id] = file;
+        // link文件加入到require列表中,package时会优先输出
+        if (file.links && file.links.length > 0) {
+            var requires = file.requires;
+            if (!requires) {
+                file.addRequire(file.links[0]);
+                requires = file.requires;
+            }
+            file.links.forEach(function (link) {
+                link = link ? link.trim() : '';
+                link = (link[0] === '\/' || link[0] === '\\') ? link.substr(1) : link.trim();
+                if (requires.indexOf(link) < 0) {
+                    requires.unshift(link);
+                }
+            });
+        }
     } else if (file.isJsLike) {
         jsFiles[file.id] = file;
     }
+    log(file, 'compile:end');
     // console.log('compile:end', file);
     fis.emit('fis3-pack', packFile, file);
     if (!file.packed) {
@@ -96,8 +113,8 @@ fis.on('compile:end', function (file) {
     }
 });
 
-// 发布文件前触发
 fis.on('postpackager', function () {
+    // 发布文件前触发
     fis.emit('fis3-pack:end', packFile);
 });
 
