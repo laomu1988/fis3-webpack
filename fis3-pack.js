@@ -15,13 +15,22 @@ var config = {
     // 添加其他代码到生成的js文件中
     append: ''
 };
-
-
+var files = {};
+var htmlFiles = {};
+var jsFiles = {};
 var packFile;
 fis.hook('commonjs');
 fis.match('::package', {postpackager: fis.plugin('loader')});
 fis.match('*.js', {isMod: true});
 fis.match('*', {deploy: [fis.plugin('local-deliver')]});
+
+function log(file, sign) {
+    sign && console.log('--------------    ' + sign + '    ---------');
+    console.log('file.id:', file.id);
+    console.log('file.url:', file.url);
+    console.log('file.links:', file.links);
+    console.log('file.requires:', file.requires);
+}
 
 fis.on('release:start', function (ret) {
     // 添加文件依赖
@@ -41,18 +50,48 @@ fis.on('release:start', function (ret) {
     fis.emit('fis3-pack:start', packFile);
 });
 
+function isRequired(file) {
+    if (!file) {
+        return false;
+    }
+    for (var attr in jsFiles) {
+        var f = jsFiles[attr];
+        if (f.requires && f.requires.length > 0) {
+            var requires = f.requires;
+            for (var i = requires.length - 1; i >= 0; i--) {
+                if (requires[i] === file.id || requires[i] === file.moduleId) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 fis.on('compile:end', function (file) {
+    log(file, 'compile:end');
+    files[file.id] = file;
+    files[file.url] = file;
+    if (file.isHtmlLike) {
+        htmlFiles[file.id] = file;
+    } else if (file.isJsLike) {
+        jsFiles[file.id] = file;
+    }
+    // console.log('compile:end', file);
     fis.emit('fis3-pack', packFile, file);
     if (!file.packed) {
         if (file.isCssLike) {
             file.packed = true;
             packFile._content += 'define("' + file.moduleId + '",function(){});\n';
         }
-        else if (file.ext === '.tpl') {
-            file.packed = true;
-            var content = file._content || '';
-            content = content.replace(/([\'\"\n])/g, '\\$1');
-            packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';
+        else if (file.isHtmlLike) {
+            // 只有被js引用的html才打包
+            if (isRequired(file)) {
+                file.packed = true;
+                var content = file._content || '';
+                content = content.replace(/([\'\"\n])/g, '\\$1');
+                packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';
+            }
         }
     }
 });
