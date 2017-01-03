@@ -37,12 +37,12 @@ webpack({
 
 
 // 增加其他的require文件规则,例如引入tpl
-fis.on('fis3-webpack',function(packFile, file) {
+fis.on('fis3-webpack',function(file) {
     if(file.ext === '.tpl') {
-        file.webpacked = true;  // 通过webpacked标记表示文件已经被处理过,无需使用默认的处理规则
         var content = file._content || '';
-        content = content.replace(/([\'\"\n])/g, '\\$1');
-        packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';
+        content = content.replace(/([\'\"])/g, '\\$1').replace(/\n/g,'\\n');
+        // file.webpacked表示文件处理后的内容
+        file.webpacked = 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';
     }
 });
 ```
@@ -57,8 +57,8 @@ fis.on('fis3-webpack',function(packFile, file) {
 
 ## 原理
 1. 监听fis3的release:start事件,生成依赖文件fis3-webpack-mod.js, 依赖文件初始化时包含配置中的mod(定义define和require)和append,并触发fis3-webpack:start事件
-2. 监听compile:end事件(每个文件处理完成后触发), 触发web-pack事件(两个参数,一个是依赖的fis3-webpack-mod.js文件,一个是当前处理的文件), 然后判断文件是否被处理(webpacked是否为true),没有处理则使用默认的规则处理
-3. 监听postpackager事件(打包阶段调用),参数是fis3-webpack-mod.js文件
+2. 监听compile:end事件(每个文件处理完成后触发), 触发web-pack事件(参数为当前处理的文件), 假如修改了文件属性webpacked值为string类型,则不会使用默认的处理程序再次处理
+3. 监听postpackager事件(打包阶段调用),触发fis3-webpack:end事件,参数是fis3-webpack-mod.js文件
 
 
 
@@ -69,9 +69,9 @@ fis.on('fis3-webpack',function(packFile, file) {
 * [x] tpl根据文件类型判断而不是扩展名判断
 * [x] tpl压缩后是否可以正常使用
 * [x] style引入和require引入的css文件顺序
-* [ ] 文件变更后是否可以正常输出(-w参数)
+* [x] 文件变更后是否可以正常输出(-w参数)
 * [x] 引入图片
-* [ ] packTo合并文件
+* [x] packTo合并文件
 
 
 ### fis3常用打包规则

@@ -19,21 +19,24 @@ var config = {
 };
 
 var files = {};
-var htmlFiles = {};
-var jsFiles = {};
-var packFile;
+var packFile, packedFiles = {};
 fis.hook('commonjs');
 fis.match('::package', {postpackager: fis.plugin('loader')});
 fis.match('*.js', {isMod: true});
 fis.match('*', {deploy: [fis.plugin('local-deliver')]});
 
-function log(file, sign) {
-    return;
-    sign && console.log('--------------    ' + sign + '    ---------');
-    console.log('file.id:', file.id);
-    console.log('file.url:', file.url);
-    console.log('file.links:', file.links);
-    console.log('file.requires:', file.requires);
+function log(sign, file) {
+    return false;
+
+    if (file && file.id) {
+        sign && console.log('--------------    ' + sign + '    ---------');
+        console.log('file.id:', file.id);
+        console.log('file.url:', file.url);
+        console.log('file.links:', JSON.stringify(file.links));
+        console.log('file.requires:', JSON.stringify(file.requires));
+    } else {
+        console.log.apply(console, arguments);
+    }
 }
 
 fis.on('release:start', function (ret) {
@@ -75,44 +78,45 @@ function isRequired(file) {
     }
     return false;
 }
+// link文件加入到require列表前,package时会优先输出
+function adjustLinks(file) {
+    if (file.links && file.links.length > 0) {
+        var requires = file.requires;
+        if (!requires) {
+            file.addRequire(file.links[0]);
+            requires = file.requires;
+        }
+        file.links.forEach(function (link) {
+            link = link ? link.trim() : '';
+            link = (link[0] === '\/' || link[0] === '\\') ? link.substr(1) : link.trim();
+            if (requires.indexOf(link) < 0) {
+                requires.unshift(link);
+            }
+        });
+    }
+}
+
 
 fis.on('compile:end', function (file) {
-    // console.log('compile:end', file.id);
-    if (!file || !file.release || file.webpacked) return;
+    log('compile:end' + file.id);
+    if (!file || !file.release || file.id.indexOf(config.name) >= 0 || file.webpacked === false) return;
+    log('start webpack:', file.id);
     files[file.id] = file;
     files[file.moduleId] = file;
     files[file.url] = file;
     if (file.isHtmlLike) {
-        htmlFiles[file.id] = file;
-        // link文件加入到require列表中,package时会优先输出
-        if (file.links && file.links.length > 0) {
-            var requires = file.requires;
-            if (!requires) {
-                file.addRequire(file.links[0]);
-                requires = file.requires;
-            }
-            file.links.forEach(function (link) {
-                link = link ? link.trim() : '';
-                link = (link[0] === '\/' || link[0] === '\\') ? link.substr(1) : link.trim();
-                if (requires.indexOf(link) < 0) {
-                    requires.unshift(link);
-                }
-            });
-        }
-    } else if (file.isJsLike) {
-        jsFiles[file.id] = file;
+        adjustLinks(file);
     }
-    log(file, 'compile:end');
+    log('compile:end', file);
     // console.log('compile:end', file);
-
-    fis.emit('fis3-webpack', packFile, file);
-    if (!file.webpacked) {
+    file.webpacked = undefined;
+    fis.emit('fis3-webpack', file);
+    if (typeof file.webpacked !== 'string') {
         function pack(content) {
-            // console.log('webpack:', file.moduleId);
+            log('webpack:', file.moduleId);
             var packBefore = 'define("' + file.moduleId + '",function(r,e,m){';
             var packEnd = '});\n';
-            file.webpacked = true;
-            packFile.setContent(packFile._content + packBefore + content + packEnd);
+            file.webpacked = packFile._content + packBefore + content + packEnd;
         }
 
         if (file.isCssLike) {
@@ -121,7 +125,6 @@ fis.on('compile:end', function (file) {
         else if (file.isHtmlLike) {
             // 只有被js引用的html才打包
             if (isRequired(file)) {
-                file.webpacked = true;
                 var content = file._content || '';
                 content = content.replace(/([\'\"])/g, '\\$1')
                     .replace(/([\n])/g, '\\n');
@@ -161,6 +164,10 @@ fis.on('compile:end', function (file) {
             }
         }
     }
+    if (file.webpacked) {
+        log('add webpacked:', file.getId());
+        packedFiles[file.getId()] = file;
+    }
     // if (file.webpacked || content != packFile.getContent()) {
     //     // 每次修改完packfile后都重新编译一次
     //     fis.compile(packFile, packFile.getContent());
@@ -169,10 +176,16 @@ fis.on('compile:end', function (file) {
 
 fis.on('pack:file', function (message) {
     if (message.file.id.indexOf(config.name) >= 0) {
+        var content = '';
+        for (var id in packedFiles) {
+            content += packedFiles[id].webpacked || '';
+        }
+        packFile.setContent(packFile.getContent() + content);
+
         // 重新编译一次,避免内容改变影响其他插件
         fis.compile(packFile, packFile.getContent());
     }
-    // console.log('pack:file', message.file.id);
+    log('pack:file', message.file.id);
 });
 
 
