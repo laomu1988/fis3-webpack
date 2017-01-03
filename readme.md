@@ -1,7 +1,7 @@
 # 让fis3像webpack一样打包
 
 ## 项目目标
-* 兼容默认require写法
+* js文件中通过require引入其他文件
     - require css,less
     - require tpl,html,txt
     - require js
@@ -24,20 +24,53 @@ fis.set('project.files', ['/demo/index.html', 'map.json']);
 fis3 release -d output
 ```
 
+
+## 自定义配置
+```
+var fs = require('fs');
+var webpack = require('fis3-webpack');
+// 修改依赖的js模块规范文件(amd,cmd等)
+webpack({
+    mod: fs.readFileSync(__dirname + '/js/require.js'), // 定义define和require规则的文件,例如可以使用require.js
+    append: 'console.log("append script");'             // 增加其他js处理代码
+});
+
+
+// 增加其他的require文件规则,例如引入tpl
+fis.on('fis3-webpack',function(packFile, file) {
+    if(file.ext === '.tpl') {
+        file.webpacked = true;  // 通过webpacked标记表示文件已经被处理过,无需使用默认的处理规则
+        var content = file._content || '';
+        content = content.replace(/([\'\"\n])/g, '\\$1');
+        packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';
+    }
+});
+```
+
+
+## 注意问题
+* 使用该插件后,将默认使用common.js格式,所有js文件都将被define(moduleId)模式包裹(除了默认定义模块).
+    - html文件引入js时,需要增加script标签,然后require('js文件路径') 即可
+    - 假如某文件不需要使用define包裹, 需在fis-conf.js中配置fis.match('文件匹配规则',{isMod: false}
+
+
+
 ## 原理
 1. 监听fis3的release:start事件,生成依赖文件fis3-webpack-mod.js, 依赖文件初始化时包含配置中的mod(定义define和require)和append,并触发fis3-webpack:start事件
-2. 监听compile:end事件(每个文件处理完成后触发), 触发web-pack事件(两个参数,一个是依赖的fis3-webpack-mod.js文件,一个是当前处理的文件), 然后判断文件是否被处理(packed是否为true),没有处理则使用默认的规则处理
+2. 监听compile:end事件(每个文件处理完成后触发), 触发web-pack事件(两个参数,一个是依赖的fis3-webpack-mod.js文件,一个是当前处理的文件), 然后判断文件是否被处理(webpacked是否为true),没有处理则使用默认的规则处理
 3. 监听postpackager事件(打包阶段调用),参数是fis3-webpack-mod.js文件
+
+
 
 ### TODO
 * [x] 增加依赖文件
 * [x] css文件依赖根据文件moduleId和文件类型增加define命名空间
 * [x] 判断tpl等文件是否被依赖,假如被依赖则自动加入生成文件
 * [x] tpl根据文件类型判断而不是扩展名判断
-* [ ] tpl压缩后是否可以正常使用
+* [x] tpl压缩后是否可以正常使用
 * [x] style引入和require引入的css文件顺序
 * [ ] 文件变更后是否可以正常输出(-w参数)
-
+* [ ] 引入图片
 
 
 ### fis3常用打包规则

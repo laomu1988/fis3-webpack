@@ -98,15 +98,15 @@ fis.on('compile:end', function (file) {
     log(file, 'compile:end');
     // console.log('compile:end', file);
     fis.emit('fis3-webpack', packFile, file);
-    if (!file.packed) {
+    if (!file.webpacked) {
         if (file.isCssLike) {
-            file.packed = true;
+            file.webpacked = true;
             packFile._content += 'define("' + file.moduleId + '",function(){});\n';
         }
         else if (file.isHtmlLike) {
             // 只有被js引用的html才打包
             if (isRequired(file)) {
-                file.packed = true;
+                file.webpacked = true;
                 var content = file._content || '';
                 content = content.replace(/([\'\"\n])/g, '\\$1');
                 packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + content + '"})';

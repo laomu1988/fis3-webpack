@@ -4,7 +4,8 @@
   "description": "fis3 pack like webpack...",
   "main": "fis3-pack.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublish": "npm version patch"
   },
   "keywords": [
     "fis3",
