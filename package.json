@@ -11,5 +11,8 @@
     "webpack"
   ],
   "author": "laomu1988@qq.com",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "fis3-optimizer-minify": "^1.0.1"
+  }
 }

@@ -9,7 +9,7 @@
 var fs = require('fs');
 var config = {
     // 生成的文件名称
-    name: 'fis3-pack-mod',
+    name: 'fis3-webpack-mod',
     // 定义define和require的模块加载器
     mod: fs.readFileSync(__dirname + '/mod.js', 'utf8'),
     // 添加其他代码到生成的js文件中
@@ -48,9 +48,11 @@ fis.on('release:start', function (ret) {
     packFile._content = config.mod + config.append;
     packFile.isMod = false;
     files[config.name] = packFile;
-    fis.emit('fis3-pack:start', packFile);
+    fis.emit('fis3-webpack:start', packFile);
 });
-
+/**
+ * 判断文件是否被其他文件依赖,而不是入口文件
+ * */
 function isRequired(file) {
     if (!file) {
         return false;
@@ -95,7 +97,7 @@ fis.on('compile:end', function (file) {
     }
     log(file, 'compile:end');
     // console.log('compile:end', file);
-    fis.emit('fis3-pack', packFile, file);
+    fis.emit('fis3-webpack', packFile, file);
     if (!file.packed) {
         if (file.isCssLike) {
             file.packed = true;
@@ -115,7 +117,7 @@ fis.on('compile:end', function (file) {
 
 fis.on('postpackager', function () {
     // 发布文件前触发
-    fis.emit('fis3-pack:end', packFile);
+    fis.emit('fis3-webpack:end', packFile);
 });
 
 
