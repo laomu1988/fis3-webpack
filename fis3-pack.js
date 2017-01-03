@@ -51,6 +51,7 @@ fis.on('release:start', function (ret) {
     packFile._content = config.mod + config.append;
     packFile.isMod = false;
     packFile.webpacked = true;
+    packFile.useCache = false;
     files[config.name] = packFile;
     fis.emit('fis3-webpack:start', packFile);
 });
@@ -76,8 +77,10 @@ function isRequired(file) {
 }
 
 fis.on('compile:end', function (file) {
+    // console.log('compile:end', file.id);
     if (!file || !file.release || file.webpacked) return;
     files[file.id] = file;
+    files[file.moduleId] = file;
     files[file.url] = file;
     if (file.isHtmlLike) {
         htmlFiles[file.id] = file;
@@ -104,12 +107,12 @@ fis.on('compile:end', function (file) {
 
     fis.emit('fis3-webpack', packFile, file);
     if (!file.webpacked) {
-        var packBefore = 'define("' + file.moduleId + '",function(r,e,m){';
-        var packEnd = '});\n';
-
         function pack(content) {
+            // console.log('webpack:', file.moduleId);
+            var packBefore = 'define("' + file.moduleId + '",function(r,e,m){';
+            var packEnd = '});\n';
             file.webpacked = true;
-            packFile._content += packBefore + content + packEnd;
+            packFile.setContent(packFile._content + packBefore + content + packEnd);
         }
 
         if (file.isCssLike) {
@@ -132,33 +135,48 @@ fis.on('compile:end', function (file) {
                 var absolutePath = 'm.exports = "' + file.release + '";';
                 if (file._content.length <= 1024 * config.imgLimit) {
                     // 体积小于指定体积,使用base64格式引入
-                    return pack(base64);
+                    pack(base64);
                 }
-                if (!file.relative) {
+                else if (!file.relative) {
                     // 使用绝对路径
-                    return pack(absolutePath);
+                    pack(absolutePath);
+                } else {
+                    while (from && !from.isHtmlLike) {
+                        // console.log(from);
+                        from = isRequired(from);
+                    }
+                    if (!from) {
+                        // 没有找到引入位置,直接使用base64引入
+                        fis3.warn('fis3-webpack can not resolve file:', file.origin);
+                        pack(base64);
+                    } else {
+                        // console.log(file._content.length);
+                        // packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + file.getBase64() + '"});\n';
+                        // 使用相对路径引入图片
+                        var src = path.relative(from.dirname, file.fullname);
+                        // console.log('relative:', from.dirname, file.fullname, src);
+                        pack('m.exports = "' + src + '";');
+                    }
                 }
-                while (from && !from.isHtmlLike) {
-                    console.log(from);
-                    from = isRequired(from);
-                }
-                if (!from) {
-                    // 没有找到引入位置,直接使用base64引入
-                    fis3.warn('fis3-webpack can not resolve file:', file.origin);
-                    return pack(base64);
-                }
-                // console.log(file._content.length);
-                // packFile._content += 'define("' + file.moduleId + '",function(r,e,m){m.exports = "' + file.getBase64() + '"});\n';
-                // 使用相对路径引入图片
-                var src = path.relative(from.dirname, file.fullname);
-                // console.log('relative:', from.dirname, file.fullname, src);
-                return pack('m.exports = "' + src + '";');
             }
         }
     }
+    // if (file.webpacked || content != packFile.getContent()) {
+    //     // 每次修改完packfile后都重新编译一次
+    //     fis.compile(packFile, packFile.getContent());
+    // }
 });
 
-fis.on('postpackager', function () {
+fis.on('pack:file', function (message) {
+    if (message.file.id.indexOf(config.name) >= 0) {
+        // 重新编译一次,避免内容改变影响其他插件
+        fis.compile(packFile, packFile.getContent());
+    }
+    // console.log('pack:file', message.file.id);
+});
+
+
+fis.on('postpackager', function (source) {
     // 发布文件前触发
     fis.emit('fis3-webpack:end', packFile);
 });
