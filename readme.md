@@ -70,7 +70,8 @@ fis.on('fis3-webpack',function(packFile, file) {
 * [x] tpl压缩后是否可以正常使用
 * [x] style引入和require引入的css文件顺序
 * [ ] 文件变更后是否可以正常输出(-w参数)
-* [ ] 引入图片
+* [x] 引入图片
+* [ ] packTo合并文件
 
 
 ### fis3常用打包规则

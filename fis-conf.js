@@ -7,4 +7,4 @@ require('./fis3-pack');
 fis.hook('relative');
 fis.match('*.*', {relative: true});
 
-fis.match('*.*', {optimizer: fis.plugin('minify')});
+// fis.match('*.*', {optimizer: fis.plugin('minify')});

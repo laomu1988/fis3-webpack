@@ -1,7 +1,7 @@
 var webpack = require('webpack');
 /***
  * 需要安装插件:
- * npm install --save-dev string-loader html-minifier css-loader less-loader style-loader
+ * npm install --save-dev string-loader html-minifier css-loader less-loader style-loader img-loader
  * */
 
 module.exports = {
@@ -25,7 +25,8 @@ module.exports = {
         loaders: [
             {test: /\.less$/, loader: 'style!css!less'},
             {test: /\.css$/, loader: 'style!css'},
-            {test: /\.tpl$/, loader: 'string'}
+            {test: /\.tpl$/, loader: 'string'},
+            {test: /\.png$/, loader: 'file!img'}
         ]
     }
 };

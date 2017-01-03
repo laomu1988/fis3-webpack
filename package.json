@@ -5,12 +5,19 @@
   "main": "fis3-pack.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublish": "npm version patch"
+    "publish": "npm version patch && npm publish"
   },
   "keywords": [
     "fis3",
     "webpack"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laomu1988/fis3-webpack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/laomu1988/fis3-webpack/issues"
+  },
   "author": "laomu1988@qq.com",
   "license": "MIT",
   "devDependencies": {
