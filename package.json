@@ -1,6 +1,6 @@
 {
   "name": "fis3-webpack",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "fis3 pack like webpack...",
   "main": "fis3-pack.js",
   "scripts": {
